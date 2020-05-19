@@ -43,6 +43,7 @@ _THING_TO_DOMAIN = {
 }
 
 
+
 _DOMAIN_TO_THING = {v: k for k, v in _THING_TO_DOMAIN.items()}
 del(_DOMAIN_TO_THING[_CLIMATE])  # Climate is ambiguous, so we remove it and use _CLIMATE_THINGS instead.
 
@@ -146,12 +147,12 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
 
     def __init__(self):
         super().__init__(name="HomeAssistantSkill")
-        self._client: HomeAssistantClient = None
+        self._client = None
         self._entities = dict()
         self._scenes = dict()
 
     def initialize(self):
-        self.settings.set_changed_callback(self.on_websettings_changed)
+        #self.settings.set_changed_callback(self.on_websettings_changed)
         self._setup()
         self._entities = self._build_entities_map(self._client.entities())
         self._scenes = self._build_scenes_map(self._client.entities())
@@ -163,7 +164,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
         if self.settings.get('enable_fallback'):
             self.register_fallback(self.handle_fallback, 2)
 
-    def _build_entities_map(self, entities: dict):
+    def _build_entities_map(self, entities):
         results = defaultdict(list)
         for id, name in entities.items():
             if name:
@@ -173,7 +174,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
                 results[name].append(id)
         return results
 
-    def _build_scenes_map(self, entities: dict):
+    def _build_scenes_map(self, entities):
         results = dict()
         for id, name in entities.items():
             if not name:
@@ -202,7 +203,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
         LOGGER.debug('Creating a new HomeAssistant-Client')
         self._setup()
 
-    def _domain(self, entity_id: str):
+    def _domain(self, entity_id):
         if entity_id is None:
             return None
         return entity_id[:entity_id.index('.')]
@@ -220,7 +221,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
     def get_scenes(self):
         return self._scenes.keys()
 
-    def run_request(self, request: IoTRequest, callback_data: dict):
+    def run_request(self, request, callback_data):
         if request.action == Action.BINARY_QUERY:
             self._run_binary_state_query(request, callback_data)
         elif request.action == Action.INFORMATION_QUERY:
@@ -232,13 +233,13 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
         else:
             self._client.run_services(**callback_data)
 
-    def _locate(self, entity_id: str):
+    def _locate(self, entity_id):
         state = self._client.get_states(entity_id)[0]
         name = state['attributes']['friendly_name']
         location = state['state'].split(' - ')[-1]  # location format is: 'username device_id - zone'
         self.speak_dialog("entity.location", {"entity": name, "location": location})
 
-    def _run_binary_state_query(self, request: IoTRequest, callback_data: dict):
+    def _run_binary_state_query(self, request, callback_data):
         """
         Currently supports POWERED/UNPOWERED queries
         """
@@ -264,7 +265,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
                             .format(queried_state=queried_state,
                                     device_state=device_state))
 
-    def can_handle(self, request: IoTRequest):
+    def can_handle(self, request):
         action = request.action
         thing = request.thing
         entity = request.entity
@@ -330,7 +331,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
 
         return False, None
 
-    def _get_entity_id(self, entity: str, action: Action, attribute: Attribute, thing: Thing):
+    def _get_entity_id(self, entity, action, attribute, thing):
         possible_ids = self._entities.get(entity)
         if not possible_ids:
             return None
@@ -361,7 +362,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
             action = Action.INCREASE
         return action
 
-    def _can_handle_simple(self, action: Action, domain: str, entity_id: str):
+    def _can_handle_simple(self, action, domain, entity_id):
         if action in _SIMPLE_ACTIONS:
             data = {_DOMAIN: domain, _SERVICE: _SIMPLE_ACTIONS[action]}
             states = [dict()]
@@ -387,7 +388,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
             return False, None
         return self._can_handle_simple(action, _SCENE, self._scenes[scene])
 
-    def _can_handle_automation(self, action: Action, entity_id: str):
+    def _can_handle_automation(self, action, entity_id):
         if not entity_id:
             return False, None
 
@@ -405,7 +406,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
 
         return False, None
 
-    def _can_handle_lights(self, action: Action, attribute: Attribute, entity_id: str, value=None):
+    def _can_handle_lights(self, action, attribute, entity_id, value=None):
         if action in _SIMPLE_ACTIONS:
             return self._can_handle_simple(action, _LIGHT, entity_id)
 
@@ -442,7 +443,7 @@ class HomeAssistantSkill(CommonIoTSkill, FallbackSkill):
 
         return False, None
 
-    def _can_handle_temperature(self, action: Action, entity_id: str, attribute: Attribute, target_key=_TEMPERATURE, value=None):
+    def _can_handle_temperature(self, action, entity_id, attribute, target_key=_TEMPERATURE, value=None):
         # TODO handle min/max temp values
         if (
                 action not in (Action.INCREASE, Action.DECREASE)
