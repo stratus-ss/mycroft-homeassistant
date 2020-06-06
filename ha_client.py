@@ -15,10 +15,7 @@ class HomeAssistantClient(object):
     def __init__(self, host, token, portnum, ssl=False, verify=True):
         self.ssl = ssl
         self.verify = verify
-        if self.ssl:
-            self.url = "https://{}".format(host)
-        else:
-            self.url = "http://{}".format(host)
+        self.url = "https://{}".format(host) if self.ssl else "http://{}".format(host)
         if portnum:
             self.url = "{}:{}".format(self.url, portnum)
         self.headers = {
@@ -119,12 +116,11 @@ class HomeAssistantClient(object):
                     # free use within handle methods
                     sensor_name = entity_attrs['friendly_name']
                     sensor_state = attr['state']
-                    entity_attr = {
+                    return {
                         "unit_measure": unit_measur,
                         "name": sensor_name,
                         "state": sensor_state
                     }
-                    return entity_attr
         return None
 
     def execute_service(self, domain, service, data):

@@ -33,32 +33,33 @@ class HomeAssistantSkill(FallbackSkill):
         self.enable_fallback = False
 
     def _setup(self, force=False):
-        if self.settings is not None and (force or self.ha is None):
-            portnumber = self.settings.get('portnum')
-            try:
-                portnumber = int(portnumber)
-            except TypeError:
-                portnumber = 8123
-            except ValueError:
-                # String might be some rubbish (like '')
-                portnumber = 0
-            self.ha = HomeAssistantClient(
-                self.settings.get('host'),
-                self.settings.get('token'),
-                portnumber,
-                self.settings.get('ssl'),
-                self.settings.get('verify')
+        if self.settings is None or not force and self.ha is not None:
+            return
+        portnumber = self.settings.get('portnum')
+        try:
+            portnumber = int(portnumber)
+        except TypeError:
+            portnumber = 8123
+        except ValueError:
+            # String might be some rubbish (like '')
+            portnumber = 0
+        self.ha = HomeAssistantClient(
+            self.settings.get('host'),
+            self.settings.get('token'),
+            portnumber,
+            self.settings.get('ssl'),
+            self.settings.get('verify')
+        )
+        if self.ha.connected():
+            # Check if conversation component is loaded at HA-server
+            # and activate fallback accordingly (ha-server/api/components)
+            # TODO: enable other tools like dialogflow
+            conversation_activated = self.ha.find_component(
+                'conversation'
             )
-            if self.ha.connected():
-                # Check if conversation component is loaded at HA-server
-                # and activate fallback accordingly (ha-server/api/components)
-                # TODO: enable other tools like dialogflow
-                conversation_activated = self.ha.find_component(
-                    'conversation'
-                )
-                if conversation_activated:
-                    self.enable_fallback = \
-                        self.settings.get('enable_fallback')
+            if conversation_activated:
+                self.enable_fallback = \
+                    self.settings.get('enable_fallback')
 
     def _force_setup(self):
         LOGGER.debug('Creating a new HomeAssistant-Client')

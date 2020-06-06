@@ -95,14 +95,13 @@ class TestHaClient(TestCase):
         else:
             r = ha.execute_service("homeassistant", "turn_on",
                                    ha_data)
-            if r.status_code == 200:
-                if entity['state'] == 'on':
-                    self.assertTrue(True)
-                    self.assertEqual(light_attr['state'], 'on')
-                    self.assertEqual(entity,
-                                     {'id': 'light.kitchen_lights', 'dev_name': 'Kitchen Lights', 'state': 'on',
-                                      'best_score': 100})
-                    self.assertEqual(light_attr['unit_measure'], 53)
+            if r.status_code == 200 and entity['state'] == 'on':
+                self.assertTrue(True)
+                self.assertEqual(light_attr['state'], 'on')
+                self.assertEqual(entity,
+                                 {'id': 'light.kitchen_lights', 'dev_name': 'Kitchen Lights', 'state': 'on',
+                                  'best_score': 100})
+                self.assertEqual(light_attr['unit_measure'], 53)
 
 
 
@@ -133,9 +132,8 @@ class TestHaClient(TestCase):
             ha.execute_service = mock.MagicMock()
             r = ha.execute_service("homeassistant", "turn_on",
                                    ha_data)
-            if r.status_code == 200:
-                if entity['state'] == 'on':
-                    self.assertTrue(True)
+            if r.status_code == 200 and entity['state'] == 'on':
+                self.assertTrue(True)
 
 
 if __name__ == '__main__':
